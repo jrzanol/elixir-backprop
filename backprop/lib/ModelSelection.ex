@@ -1,0 +1,44 @@
+defmodule ModelSelection do
+  @moduledoc """
+  Implementa as funções de seleção de modelos, como a train_test_split.
+  """
+
+  @doc """
+  Divide os dados em treino e teste.
+
+  ## Parâmetros
+    - x: lista de features
+    - y: lista de labels
+    - test_size: proporção (ex: 0.25) ou número de amostras (ex: 100)
+    - shuffle: se verdadeiro, embaralha os dados antes da divisão
+
+  ## Retorna
+    {x_train, x_test, y_train, y_test}
+  """
+  def train_test_split(x, y, test_size \\ 0.25, shuffle \\ true) do
+    n = length(x)
+
+    indices =
+      if shuffle do
+        Enum.shuffle(0..(n - 1))
+      else
+        Enum.to_list(0..(n - 1))
+      end
+
+    test_count =
+      cond do
+        is_float(test_size) -> round(n * test_size)
+        is_integer(test_size) -> test_size
+        true -> round(n * 0.25)
+      end
+
+    {test_idx, train_idx} = Enum.split(indices, test_count)
+
+    x_test = Enum.map(test_idx, &Enum.at(x, &1))
+    y_test = Enum.map(test_idx, &Enum.at(y, &1))
+    x_train = Enum.map(train_idx, &Enum.at(x, &1))
+    y_train = Enum.map(train_idx, &Enum.at(y, &1))
+
+    {x_train, x_test, y_train, y_test}
+  end
+end
