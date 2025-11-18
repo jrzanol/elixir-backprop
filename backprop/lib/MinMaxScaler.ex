@@ -36,7 +36,5 @@ defmodule MinMaxScaler do
   end
 
   defp scale_value(_value, min_val, max_val) when max_val == min_val, do: 0.0
-  defp scale_value(value, min_val, max_val) do
-    (value - min_val) / (max_val - min_val)
-  end
+  defp scale_value(value, min_val, max_val), do: (value - min_val) / (max_val - min_val)
 end

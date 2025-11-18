@@ -4,10 +4,11 @@ alias OneHotEncoder
 alias MLPClassifier
 alias ModelSelection
 
-# Leitura do CSV contendo o dataset:
+# Leitura do CSV contendo o dataset:-
 dataset = ReadCsv.read("heart.csv")
 {x, y_raw} = Enum.unzip(dataset)
 
+# Modifica os valores de y para 0/1:
 y = Enum.map(y_raw, fn yval ->
   val = if is_list(yval), do: hd(yval), else: yval
   trunc(val)
@@ -29,17 +30,15 @@ x_train_norm = MinMaxScaler.transform(scaler, x_train_encoded)
 x_test_norm = MinMaxScaler.transform(scaler, x_test_encoded)
 
 # Cria e Treina o modelo MLP:
-mlp = MLPClassifier.new([length(hd(x_train_norm)), 8, 1])
+mlp = MLPClassifier.new([length(hd(x_train_norm)), 8, 1], {123, 456, 789})
 mlp_trained = MLPClassifier.fit(mlp, x_train_norm, y_train, 1000, 0.001)
 
-# Realiza predições no conjunto de teste:
+# Realiza predições no conjunto de teste e calcula a acurácia:
 preds = Enum.map(x_test_norm, &MLPClassifier.predict(mlp_trained, &1))
-
-# Calcula a taxa de acerto
 correct = Enum.zip(preds, y_test) |> Enum.count(fn {pred, actual} -> pred == actual end)
 accuracy = correct / length(y_test) * 100
 
+# Exibe os resultados:
 IO.inspect(y_test, label: "Valor Corretos:")
 IO.inspect(preds, label: "Predições:")
-
 IO.puts("Taxa de acerto: #{Float.round(accuracy, 2)}%")

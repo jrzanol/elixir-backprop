@@ -1,14 +1,13 @@
 defmodule MLPClassifier do
+  @moduledoc """
+  Implementa o Modelo de Classificação usando Perceptron Multicamadas (MLP).
+  """
+
   defstruct weights: [], biases: [], layers: []
 
-  def new(layers), do: %__MODULE__{layers: layers}
+  def new(layers, seed) do
+    :rand.seed(:exsplus, seed)
 
-  def fit(model, x_train, y_train, epochs \\ 1000, lr \\ 0.1) do
-    {weights, biases} = initialize_params(model.layers)
-    train_loop(%{model | weights: weights, biases: biases}, x_train, y_train, epochs, lr)
-  end
-
-  defp initialize_params(layers) do
     weights =
       Enum.chunk_every(layers, 2, 1, :discard)
       |> Enum.map(fn [a, b] ->
@@ -17,33 +16,18 @@ defmodule MLPClassifier do
       end)
 
     biases = Enum.map(tl(layers), fn b -> for _ <- 1..b, do: 0.0 end)
-    {weights, biases}
-  end
 
-  defp train_loop(model, _, _, 0, _), do: model
-
-  defp train_loop(model, x_train, y_train, epochs, lr) do
-    updated =
-      Enum.zip(x_train, y_train)
-      |> Enum.reduce(model, fn {x, y}, m ->
-        {activations, zs} = forward(m, x)
-        {nabla_w, nabla_b} = backprop(m, activations, zs, y)
-        update_params(m, nabla_w, nabla_b, lr)
-      end)
-
-    if rem(epochs, 100) == 0 do
-      loss = calculate_loss(updated, x_train, y_train)
-      IO.puts("Época #{1000 - epochs + 1}, Loss: #{Float.round(loss, 4)}")
-    end
-
-    train_loop(updated, x_train, y_train, epochs - 1, lr)
+    %MLPClassifier{
+      layers: layers,
+      weights: weights,
+      biases: biases
+    }
   end
 
   def predict(model, x) do
     {activations, _} = forward(model, x)
     List.last(activations) |> Enum.map(&round/1) |> hd()
   end
-
   defp forward(model, input) do
     Enum.zip(model.weights, model.biases)
     |> Enum.reduce({[input], []}, fn {w, b}, {acts, zs} ->
@@ -57,6 +41,23 @@ defmodule MLPClassifier do
     end)
   end
 
+  def fit(model, _x_train, _y_train, epochs, _lr) when epochs == 0, do: model
+  def fit(model, x_train, y_train, epochs, lr) do
+    updated =
+      Enum.zip(x_train, y_train)
+      |> Enum.reduce(model, fn {x, y}, m ->
+        {activations, zs} = forward(m, x)
+        {nabla_w, nabla_b} = backprop(m, activations, zs, y)
+        update_params(m, nabla_w, nabla_b, lr)
+      end)
+
+    if rem(epochs, 100) == 0 do
+      loss = calculate_loss(updated, x_train, y_train)
+      IO.puts("Época #{1000 - epochs + 1}, Loss: #{Float.round(loss, 4)}")
+    end
+
+    fit(updated, x_train, y_train, epochs - 1, lr)
+  end
   defp backprop(model, activations, zs, y_true) do
     y_list = if is_list(y_true), do: y_true, else: [y_true]
     y_pred = List.last(activations)
@@ -72,7 +73,6 @@ defmodule MLPClassifier do
 
     propagate_error(model.weights, activations, zs, delta, nabla_w, nabla_b)
   end
-
   defp propagate_error(weights, activations, zs, delta, nabla_w, nabla_b) do
     num_layers = length(weights)
 
@@ -97,7 +97,6 @@ defmodule MLPClassifier do
     end)
     |> then(fn {_, nw, nb} -> {nw, nb} end)
   end
-
   defp update_params(model, nabla_w, nabla_b, lr) do
     new_weights = Enum.zip(model.weights, nabla_w)
                   |> Enum.map(fn {layer_w, layer_nw} ->
@@ -116,7 +115,6 @@ defmodule MLPClassifier do
 
     %{model | weights: new_weights, biases: new_biases}
   end
-
   defp calculate_loss(model, x_train, y_train) do
     errors = Enum.zip(x_train, y_train)
              |> Enum.map(fn {x, y} ->
