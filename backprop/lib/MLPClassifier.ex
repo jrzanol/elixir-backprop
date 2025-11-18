@@ -1,3 +1,5 @@
+alias XorShift64Star
+
 defmodule MLPClassifier do
   @moduledoc """
   Implementa o Modelo de Classificação usando Perceptron Multicamadas (MLP).
@@ -6,13 +8,25 @@ defmodule MLPClassifier do
   defstruct weights: [], biases: [], layers: []
 
   def new(layers, seed) do
-    :rand.seed(:exsplus, seed)
+    rng0 = seed
 
-    weights =
+    # Gera os pesos iniciais aleatoriamente.
+    {weights, _} =
       Enum.chunk_every(layers, 2, 1, :discard)
-      |> Enum.map(fn [a, b] ->
+      |> Enum.map_reduce(rng0, fn [a, b], rng ->
         limit = :math.sqrt(2.0 / a)
-        for _ <- 1..b, do: (for _ <- 1..a, do: (:rand.uniform() * 2 - 1) * limit)
+
+        Enum.map_reduce(1..b, rng, fn _, rng2 ->
+          Enum.map_reduce(1..a, rng2, fn _, rng3 ->
+            {rng4, u} = XorShift64Star.uniform_float(rng3)
+
+            # random in [-1, 1]
+            val = (u * 2 - 1) * limit
+
+            {val, rng4}
+          end)
+        end)
+        |> (fn {row_values, new_rng} -> {row_values, new_rng} end).()
       end)
 
     biases = Enum.map(tl(layers), fn b -> for _ <- 1..b, do: 0.0 end)

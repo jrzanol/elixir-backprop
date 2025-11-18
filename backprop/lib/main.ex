@@ -3,8 +3,9 @@ alias MinMaxScale
 alias OneHotEncoder
 alias MLPClassifier
 alias ModelSelection
+alias XorShift64Star
 
-# Leitura do CSV contendo o dataset:-
+# Leitura do CSV contendo o dataset:
 dataset = ReadCsv.read("heart.csv")
 {x, y_raw} = Enum.unzip(dataset)
 
@@ -30,7 +31,7 @@ x_train_norm = MinMaxScaler.transform(scaler, x_train_encoded)
 x_test_norm = MinMaxScaler.transform(scaler, x_test_encoded)
 
 # Cria e Treina o modelo MLP:
-mlp = MLPClassifier.new([length(hd(x_train_norm)), 8, 1], {123, 456, 789})
+mlp = MLPClassifier.new([length(hd(x_train_norm)), 8, 1], 42)
 mlp_trained = MLPClassifier.fit(mlp, x_train_norm, y_train, 1000, 0.001)
 
 # Realiza predições no conjunto de teste e calcula a acurácia:
